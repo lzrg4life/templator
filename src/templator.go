@@ -15,31 +15,45 @@ func check(err error) {
 }
 
 func main() {
-
 	if len(os.Args) != 4 {
-		fmt.Println("You must provide exactly 3 arguments: <source> <base> <output>")
+		fmt.Println("You must provide exactly 3 arguments: <sourceFileName> <templateFileName> <outFileName>")
 	}
 
-	source := os.Args[1]
-	base := os.Args[2]
-	out := os.Args[3]
+	sourceFileName := os.Args[1]
+	templateFileName := os.Args[2]
+	outFileName := os.Args[3]
 
-	sourceData, err := ioutil.ReadFile(source)
+	template := prepareTemplate(templateFileName)
+	data := readSource(sourceFileName)
+	executeTemplate(outFileName, template, data)
+}
+
+func readSource(sourceFileName string) interface{} {
+	sourceData, err := ioutil.ReadFile(sourceFileName)
 	check(err)
 
 	var data interface{}
 	err = json.Unmarshal(sourceData, &data)
-
-	baseData, err := ioutil.ReadFile(base)
 	check(err)
 
-	templ, err := template.New("Base").Parse(string(baseData))
+	return data
+}
+
+func prepareTemplate(templateFileName string) *template.Template {
+	baseData, err := ioutil.ReadFile(templateFileName)
 	check(err)
 
-	f, err := os.Create(out)
+	template, err := template.New("Base").Parse(string(baseData))
+	check(err)
+
+	return template
+}
+
+func executeTemplate(outFileName string, template *template.Template, data interface{}) {
+	f, err := os.Create(outFileName)
 	check(err)
 	defer f.Close()
 
-	err = templ.Execute(f, data)
+	err = template.Execute(f, data)
 	check(err)
 }
